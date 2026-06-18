@@ -1,9 +1,12 @@
+<!-- new html here-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="theme-color" content="#0a0a0a"/>
+<meta name="theme-color" content="#4a7c59" media="(prefers-color-scheme: light)"/>
+<meta name="theme-color" content="#111110" media="(prefers-color-scheme: dark)"/>
 <title>ODO</title>
 <link rel="manifest" href="manifest.json"/>
 <link rel="apple-touch-icon" href="icons/icon-192.png"/>
@@ -11,77 +14,87 @@
 </head>
 <body>
 
-<!-- ONBOARDING OVERLAY -->
+<!-- ONBOARDING -->
 <div class="overlay" id="overlay">
   <div class="overlay-logo">ODO</div>
-  <div class="overlay-sub">Trip Odometer Tracker</div>
+  <div class="overlay-headline">Let's get started.</div>
+  <div class="overlay-sub">Enter your current odometer reading to begin tracking trips. This is saved only to this device.</div>
   <div class="field">
-    <label>Current Odometer Reading</label>
-    <input type="number" id="init-odo" placeholder="000000" inputmode="numeric"/>
+    <label>Current Odometer</label>
+    <input type="number" id="init-odo" placeholder="000000" inputmode="numeric" autofocus/>
   </div>
-  <button class="btn" onclick="initOdometer()">START TRACKING</button>
-  <p class="overlay-hint">Enter your current odometer reading to begin.<br/>This is saved only to this device.</p>
+  <button class="btn" onclick="initOdometer()">Start Tracking</button>
+  <p class="overlay-hint">Your data never leaves this device.</p>
 </div>
 
 <header>
   <div class="logo">ODO</div>
-  <div class="header-status" id="header-status">—</div>
+  <div class="header-badge" id="header-badge">
+    <div class="header-dot" id="header-dot"></div>
+    <div class="header-badge-text" id="header-badge-text">—</div>
+  </div>
 </header>
 
 <!-- DASHBOARD -->
 <div class="view active" id="view-dash">
+  <div class="hero-card">
+    <div class="hero-label">Odometer</div>
+    <div class="hero-value" id="dash-odo">—<span class="hero-unit">mi</span></div>
+  </div>
+
   <div class="dash-grid">
-    <div class="card wide">
-      <div class="card-label">Current Odometer</div>
-      <div class="card-value" id="dash-odo">—</div>
-      <div class="card-sub">miles</div>
-    </div>
-    <div class="card">
-      <div class="card-label">Status</div>
-      <div class="card-value sm" id="dash-status">—</div>
-    </div>
     <div class="card">
       <div class="card-label">Total Trips</div>
-      <div class="card-value sm" id="dash-trips">0</div>
+      <div class="card-value md" id="dash-trips">0</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Total Miles</div>
+      <div class="card-value md" id="dash-miles">0</div>
     </div>
   </div>
 
   <p class="section-label">Last Trip</p>
-  <div class="card" id="last-trip-card">
-    <div class="empty-state">No trips recorded yet</div>
-  </div>
+  <div id="last-trip-card"></div>
 </div>
 
 <!-- MARK TRIP -->
 <div class="view" id="view-mark">
-  <p class="section-label" style="margin-bottom:20px">Record a Trip</p>
-
   <div class="field">
     <label>New Odometer Reading</label>
     <input type="number" id="mark-odo" placeholder="000000" inputmode="numeric"/>
   </div>
 
-  <div class="field">
-    <label>Trip Status</label>
-  </div>
-  <div class="toggle-wrap">
-    <button class="toggle-opt active-loaded" id="toggle-loaded" onclick="setStatus('loaded')">LOADED</button>
-    <button class="toggle-opt" id="toggle-empty" onclick="setStatus('empty')">EMPTY</button>
-  </div>
-
-  <button class="btn" id="mark-btn" onclick="markTrip()">MARK TRIP</button>
-
-  <div class="card" style="margin-top:20px">
-    <div class="card-label">Previous Odometer</div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-label">Previous Reading</div>
     <div class="card-value sm" id="mark-prev-odo">—</div>
-    <div class="card-sub">delta will be recorded as trip distance</div>
+    <div class="card-sub" id="mark-delta">Enter new reading to see distance</div>
   </div>
+
+  <div class="trip-status-label">This trip was</div>
+  <div class="status-select">
+    <button class="status-btn active-loaded" id="btn-loaded" onclick="setStatus('loaded')">
+      <div class="status-btn-dot"></div>
+      <div class="status-btn-text">
+        <div class="status-btn-title">Loaded</div>
+        <div class="status-btn-sub">Carrying a load this trip</div>
+      </div>
+    </button>
+    <button class="status-btn" id="btn-empty" onclick="setStatus('empty')">
+      <div class="status-btn-dot"></div>
+      <div class="status-btn-text">
+        <div class="status-btn-title">Empty</div>
+        <div class="status-btn-sub">Running empty this trip</div>
+      </div>
+    </button>
+  </div>
+
+  <button class="btn" id="mark-btn" onclick="markTrip()">Mark Trip</button>
 </div>
 
 <!-- HISTORY -->
 <div class="view" id="view-history">
   <div class="search-wrap">
-    <input type="text" id="search-input" placeholder="Search by date or status..." oninput="renderHistory()"/>
+    <input type="text" id="search-input" placeholder="Search by date or status…" oninput="renderHistory()"/>
   </div>
   <div id="trip-list"></div>
 </div>
@@ -89,7 +102,7 @@
 <!-- STATS -->
 <div class="view" id="view-stats">
   <p class="section-label">Overview</p>
-  <div class="stats-grid" id="stats-grid">
+  <div class="stats-grid">
     <div class="card">
       <div class="card-label">Total Trips</div>
       <div class="card-value sm" id="stat-total">0</div>
@@ -99,32 +112,32 @@
       <div class="card-value sm" id="stat-miles">0</div>
     </div>
     <div class="card">
-      <div class="card-label">Avg Distance</div>
+      <div class="card-label">Avg Trip</div>
       <div class="card-value sm" id="stat-avg">0</div>
-      <div class="card-sub">miles per trip</div>
+      <div class="card-sub">miles</div>
     </div>
     <div class="card">
-      <div class="card-label">Loaded Trips</div>
-      <div class="card-value sm" id="stat-loaded">0</div>
-    </div>
-    <div class="card">
-      <div class="card-label">Empty Trips</div>
-      <div class="card-value sm" id="stat-empty">0</div>
-    </div>
-    <div class="card">
-      <div class="card-label">Longest Trip</div>
+      <div class="card-label">Longest</div>
       <div class="card-value sm" id="stat-longest">0</div>
       <div class="card-sub">miles</div>
     </div>
+    <div class="card">
+      <div class="card-label">Loaded</div>
+      <div class="card-value sm loaded" id="stat-loaded">0</div>
+      <div class="card-sub">trips</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Empty</div>
+      <div class="card-value sm empty" id="stat-empty">0</div>
+      <div class="card-sub">trips</div>
+    </div>
   </div>
 
-  <div style="margin-top: 20px">
-    <p class="section-label">Data</p>
-    <div class="card">
-      <div class="card-label" style="margin-bottom:12px">Export & Reset</div>
-      <button class="btn" onclick="exportData()">EXPORT JSON</button>
-      <button class="btn danger" onclick="confirmReset()">RESET ALL DATA</button>
-    </div>
+  <div class="divider"></div>
+  <p class="section-label">Data</p>
+  <div class="card">
+    <button class="btn secondary" onclick="exportData()">Export as JSON</button>
+    <button class="btn danger" onclick="confirmReset()">Reset All Data</button>
   </div>
 </div>
 
@@ -132,22 +145,22 @@
 
 <nav>
   <button class="nav-btn active" id="nav-dash" onclick="showView('dash')">
-    <span class="nav-icon">◈</span>DASH
+    <span class="nav-icon">⊙</span>Dash
   </button>
   <button class="nav-btn" id="nav-mark" onclick="showView('mark')">
-    <span class="nav-icon">◎</span>MARK
+    <span class="nav-icon">＋</span>Mark
   </button>
   <button class="nav-btn" id="nav-history" onclick="showView('history')">
-    <span class="nav-icon">≡</span>TRIPS
+    <span class="nav-icon">☰</span>Trips
   </button>
   <button class="nav-btn" id="nav-stats" onclick="showView('stats')">
-    <span class="nav-icon">◇</span>STATS
+    <span class="nav-icon">◇</span>Stats
   </button>
 </nav>
 
 <script>
-// ─── STORAGE ────────────────────────────────────────────────
 const STORE_KEY = 'odo_data';
+let currentStatus = 'loaded';
 
 function load() {
   const raw = localStorage.getItem(STORE_KEY);
@@ -158,10 +171,6 @@ function save(data) {
   localStorage.setItem(STORE_KEY, JSON.stringify(data));
 }
 
-// ─── STATE ──────────────────────────────────────────────────
-let currentStatus = 'loaded';
-
-// ─── INIT ───────────────────────────────────────────────────
 function boot() {
   const data = load();
   if (!data) {
@@ -175,24 +184,42 @@ function boot() {
 function initOdometer() {
   const val = parseInt(document.getElementById('init-odo').value);
   if (isNaN(val) || val < 0) { toast('Enter a valid odometer reading', 'error'); return; }
-  const data = { meta: { lastOdometer: val, currentStatus: 'loaded' }, trips: [] };
-  save(data);
+  save({ meta: { lastOdometer: val, currentStatus: 'loaded' }, trips: [] });
   document.getElementById('overlay').classList.add('hidden');
   renderAll();
-  toast('Odometer set to ' + val.toLocaleString(), 'success');
+  toast('Ready to track', 'success');
 }
 
-// ─── MARK TRIP ──────────────────────────────────────────────
 function setStatus(status) {
   currentStatus = status;
-  document.getElementById('toggle-loaded').className = 'toggle-opt' + (status === 'loaded' ? ' active-loaded' : '');
-  document.getElementById('toggle-empty').className = 'toggle-opt' + (status === 'empty' ? ' active-empty' : '');
+  document.getElementById('btn-loaded').className = 'status-btn' + (status === 'loaded' ? ' active-loaded' : '');
+  document.getElementById('btn-empty').className = 'status-btn' + (status === 'empty' ? ' active-empty' : '');
 }
+
+// Live delta preview as user types
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('mark-odo').addEventListener('input', function() {
+    const data = load();
+    if (!data) return;
+    const val = parseInt(this.value);
+    const deltaEl = document.getElementById('mark-delta');
+    if (!isNaN(val) && val > data.meta.lastOdometer) {
+      const diff = val - data.meta.lastOdometer;
+      deltaEl.textContent = '+' + diff.toLocaleString() + ' miles this trip';
+      deltaEl.style.color = 'var(--accent)';
+    } else if (!isNaN(val) && val <= data.meta.lastOdometer) {
+      deltaEl.textContent = 'Must be greater than previous reading';
+      deltaEl.style.color = 'var(--red)';
+    } else {
+      deltaEl.textContent = 'Enter new reading to see distance';
+      deltaEl.style.color = '';
+    }
+  });
+});
 
 function markTrip() {
   const data = load();
   const newOdo = parseInt(document.getElementById('mark-odo').value);
-
   if (isNaN(newOdo) || newOdo < 0) { toast('Enter a valid odometer reading', 'error'); return; }
   if (newOdo <= data.meta.lastOdometer) { toast('New reading must be greater than previous', 'error'); return; }
 
@@ -206,58 +233,57 @@ function markTrip() {
     distance
   };
 
-  data.trips.unshift(trip); // newest first
+  data.trips.unshift(trip);
   data.meta.lastOdometer = newOdo;
   data.meta.currentStatus = currentStatus;
   save(data);
 
   document.getElementById('mark-odo').value = '';
+  document.getElementById('mark-delta').textContent = 'Enter new reading to see distance';
+  document.getElementById('mark-delta').style.color = '';
   renderAll();
   toast(distance.toLocaleString() + ' mi recorded', 'success');
   showView('dash');
 }
 
-// ─── RENDER ─────────────────────────────────────────────────
 function renderAll() {
   const data = load();
   if (!data) return;
 
-  // header
-  const statusEl = document.getElementById('header-status');
-  statusEl.textContent = data.meta.currentStatus.toUpperCase();
-  statusEl.style.color = data.meta.currentStatus === 'loaded' ? 'var(--loaded)' : 'var(--empty)';
+  // header badge
+  const status = data.meta.currentStatus;
+  document.getElementById('header-dot').className = 'header-dot ' + (status === 'empty' ? 'empty' : '');
+  document.getElementById('header-badge-text').textContent = status === 'loaded' ? 'Loaded' : 'Empty';
 
   // dashboard
-  document.getElementById('dash-odo').textContent = data.meta.lastOdometer.toLocaleString();
-  const ds = document.getElementById('dash-status');
-  ds.textContent = data.meta.currentStatus.toUpperCase();
-  ds.className = 'card-value sm ' + data.meta.currentStatus;
+  document.getElementById('dash-odo').innerHTML = data.meta.lastOdometer.toLocaleString() + '<span class="hero-unit">mi</span>';
   document.getElementById('dash-trips').textContent = data.trips.length;
+  const totalMiles = data.trips.reduce((s, t) => s + t.distance, 0);
+  document.getElementById('dash-miles').textContent = totalMiles.toLocaleString();
 
   // last trip
   const ltCard = document.getElementById('last-trip-card');
   if (data.trips.length === 0) {
-    ltCard.innerHTML = '<div class="empty-state">No trips recorded yet</div>';
+    ltCard.innerHTML = '<div class="card"><div class="empty-state">No trips recorded yet</div></div>';
   } else {
     const t = data.trips[0];
     ltCard.innerHTML = `
-      <div class="card-row">
-        <div>
-          <div class="card-label">${fmtDate(t.timestamp)}</div>
-          <div class="card-value sm">${t.distance.toLocaleString()} <span style="font-size:13px;color:var(--muted)">mi</span></div>
-          <div class="card-sub">${t.odometerStart.toLocaleString()} → ${t.odometerEnd.toLocaleString()}</div>
+      <div class="card">
+        <div class="last-trip-inner">
+          <div class="last-trip-meta">
+            <div class="card-label">${fmtDate(t.timestamp)}</div>
+            <div class="last-trip-distance">${t.distance.toLocaleString()}<span class="unit">mi</span></div>
+            <div class="last-trip-range">${t.odometerStart.toLocaleString()} → ${t.odometerEnd.toLocaleString()}</div>
+          </div>
+          <div class="status-pill ${t.status}">${t.status}</div>
         </div>
-        <div class="trip-status ${t.status}">${t.status}</div>
       </div>`;
   }
 
   // mark trip prev odo
   document.getElementById('mark-prev-odo').textContent = data.meta.lastOdometer.toLocaleString();
 
-  // history
   renderHistory();
-
-  // stats
   renderStats(data);
 }
 
@@ -267,10 +293,9 @@ function renderHistory() {
   const query = document.getElementById('search-input').value.toLowerCase();
   const list = document.getElementById('trip-list');
 
-  const filtered = data.trips.filter(t => {
-    const dateStr = fmtDate(t.timestamp).toLowerCase();
-    return dateStr.includes(query) || t.status.includes(query);
-  });
+  const filtered = data.trips.filter(t =>
+    fmtDate(t.timestamp).toLowerCase().includes(query) || t.status.includes(query)
+  );
 
   if (filtered.length === 0) {
     list.innerHTML = '<div class="empty-state">No trips found</div>';
@@ -279,14 +304,17 @@ function renderHistory() {
 
   list.innerHTML = filtered.map(t => `
     <div class="trip-item">
+      <div class="trip-dot ${t.status}"></div>
       <div class="trip-left">
         <div class="trip-date">${fmtDate(t.timestamp)}</div>
         <div class="trip-range">${t.odometerStart.toLocaleString()} → ${t.odometerEnd.toLocaleString()}</div>
       </div>
-      <div class="trip-status ${t.status}">${t.status}</div>
-      <div class="trip-distance">${t.distance.toLocaleString()} <span>MI</span></div>
-    </div>
-  `).join('');
+      <div class="trip-right">
+        <div class="trip-distance">${t.distance.toLocaleString()}</div>
+        <div class="trip-mi">MI</div>
+        <div class="trip-status-tag ${t.status}">${t.status}</div>
+      </div>
+    </div>`).join('');
 }
 
 function renderStats(data) {
@@ -306,11 +334,10 @@ function renderStats(data) {
   document.getElementById('stat-longest').textContent = longest.toLocaleString();
 }
 
-// ─── UTILS ──────────────────────────────────────────────────
 function fmtDate(iso) {
   const d = new Date(iso);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    + ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
 function showView(view) {
@@ -340,13 +367,12 @@ function exportData() {
 }
 
 function confirmReset() {
-  if (confirm('Delete all trips and reset odometer? This cannot be undone.')) {
+  if (confirm('Delete all trips and reset? This cannot be undone.')) {
     localStorage.removeItem(STORE_KEY);
     location.reload();
   }
 }
 
-// ─── PWA ────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/ODO/sw.js');
 }
