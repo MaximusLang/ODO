@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#0a0a0a"/>
+<title>ODO</title>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icons/icon-192.png"/>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- ONBOARDING OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="overlay-logo">ODO</div>
+  <div class="overlay-sub">Trip Odometer Tracker</div>
+  <div class="field">
+    <label>Current Odometer Reading</label>
+    <input type="number" id="init-odo" placeholder="000000" inputmode="numeric"/>
+  </div>
+  <button class="btn" onclick="initOdometer()">START TRACKING</button>
+  <p class="overlay-hint">Enter your current odometer reading to begin.<br/>This is saved only to this device.</p>
+</div>
+
+<header>
+  <div class="logo">ODO</div>
+  <div class="header-status" id="header-status">—</div>
+</header>
+
+<!-- DASHBOARD -->
+<div class="view active" id="view-dash">
+  <div class="dash-grid">
+    <div class="card wide">
+      <div class="card-label">Current Odometer</div>
+      <div class="card-value" id="dash-odo">—</div>
+      <div class="card-sub">miles</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Status</div>
+      <div class="card-value sm" id="dash-status">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Total Trips</div>
+      <div class="card-value sm" id="dash-trips">0</div>
+    </div>
+  </div>
+
+  <p class="section-label">Last Trip</p>
+  <div class="card" id="last-trip-card">
+    <div class="empty-state">No trips recorded yet</div>
+  </div>
+</div>
+
+<!-- MARK TRIP -->
+<div class="view" id="view-mark">
+  <p class="section-label" style="margin-bottom:20px">Record a Trip</p>
+
+  <div class="field">
+    <label>New Odometer Reading</label>
+    <input type="number" id="mark-odo" placeholder="000000" inputmode="numeric"/>
+  </div>
+
+  <div class="field">
+    <label>Trip Status</label>
+  </div>
+  <div class="toggle-wrap">
+    <button class="toggle-opt active-loaded" id="toggle-loaded" onclick="setStatus('loaded')">LOADED</button>
+    <button class="toggle-opt" id="toggle-empty" onclick="setStatus('empty')">EMPTY</button>
+  </div>
+
+  <button class="btn" id="mark-btn" onclick="markTrip()">MARK TRIP</button>
+
+  <div class="card" style="margin-top:20px">
+    <div class="card-label">Previous Odometer</div>
+    <div class="card-value sm" id="mark-prev-odo">—</div>
+    <div class="card-sub">delta will be recorded as trip distance</div>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div class="view" id="view-history">
+  <div class="search-wrap">
+    <input type="text" id="search-input" placeholder="Search by date or status..." oninput="renderHistory()"/>
+  </div>
+  <div id="trip-list"></div>
+</div>
+
+<!-- STATS -->
+<div class="view" id="view-stats">
+  <p class="section-label">Overview</p>
+  <div class="stats-grid" id="stats-grid">
+    <div class="card">
+      <div class="card-label">Total Trips</div>
+      <div class="card-value sm" id="stat-total">0</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Total Miles</div>
+      <div class="card-value sm" id="stat-miles">0</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Avg Distance</div>
+      <div class="card-value sm" id="stat-avg">0</div>
+      <div class="card-sub">miles per trip</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Loaded Trips</div>
+      <div class="card-value sm" id="stat-loaded">0</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Empty Trips</div>
+      <div class="card-value sm" id="stat-empty">0</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Longest Trip</div>
+      <div class="card-value sm" id="stat-longest">0</div>
+      <div class="card-sub">miles</div>
+    </div>
+  </div>
+
+  <div style="margin-top: 20px">
+    <p class="section-label">Data</p>
+    <div class="card">
+      <div class="card-label" style="margin-bottom:12px">Export & Reset</div>
+      <button class="btn" onclick="exportData()">EXPORT JSON</button>
+      <button class="btn danger" onclick="confirmReset()">RESET ALL DATA</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<nav>
+  <button class="nav-btn active" id="nav-dash" onclick="showView('dash')">
+    <span class="nav-icon">◈</span>DASH
+  </button>
+  <button class="nav-btn" id="nav-mark" onclick="showView('mark')">
+    <span class="nav-icon">◎</span>MARK
+  </button>
+  <button class="nav-btn" id="nav-history" onclick="showView('history')">
+    <span class="nav-icon">≡</span>TRIPS
+  </button>
+  <button class="nav-btn" id="nav-stats" onclick="showView('stats')">
+    <span class="nav-icon">◇</span>STATS
+  </button>
+</nav>
+
+<script>
+// ─── STORAGE ────────────────────────────────────────────────
+const STORE_KEY = 'odo_data';
+
+function load() {
+  const raw = localStorage.getItem(STORE_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
+
+function save(data) {
+  localStorage.setItem(STORE_KEY, JSON.stringify(data));
+}
+
+// ─── STATE ──────────────────────────────────────────────────
+let currentStatus = 'loaded';
+
+// ─── INIT ───────────────────────────────────────────────────
+function boot() {
+  const data = load();
+  if (!data) {
+    document.getElementById('overlay').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('overlay').classList.add('hidden');
+  renderAll();
+}
+
+function initOdometer() {
+  const val = parseInt(document.getElementById('init-odo').value);
+  if (isNaN(val) || val < 0) { toast('Enter a valid odometer reading', 'error'); return; }
+  const data = { meta: { lastOdometer: val, currentStatus: 'loaded' }, trips: [] };
+  save(data);
+  document.getElementById('overlay').classList.add('hidden');
+  renderAll();
+  toast('Odometer set to ' + val.toLocaleString(), 'success');
+}
+
+// ─── MARK TRIP ──────────────────────────────────────────────
+function setStatus(status) {
+  currentStatus = status;
+  document.getElementById('toggle-loaded').className = 'toggle-opt' + (status === 'loaded' ? ' active-loaded' : '');
+  document.getElementById('toggle-empty').className = 'toggle-opt' + (status === 'empty' ? ' active-empty' : '');
+}
+
+function markTrip() {
+  const data = load();
+  const newOdo = parseInt(document.getElementById('mark-odo').value);
+
+  if (isNaN(newOdo) || newOdo < 0) { toast('Enter a valid odometer reading', 'error'); return; }
+  if (newOdo <= data.meta.lastOdometer) { toast('New reading must be greater than previous', 'error'); return; }
+
+  const distance = newOdo - data.meta.lastOdometer;
+  const trip = {
+    id: Date.now(),
+    timestamp: new Date().toISOString(),
+    status: currentStatus,
+    odometerStart: data.meta.lastOdometer,
+    odometerEnd: newOdo,
+    distance
+  };
+
+  data.trips.unshift(trip); // newest first
+  data.meta.lastOdometer = newOdo;
+  data.meta.currentStatus = currentStatus;
+  save(data);
+
+  document.getElementById('mark-odo').value = '';
+  renderAll();
+  toast(distance.toLocaleString() + ' mi recorded', 'success');
+  showView('dash');
+}
+
+// ─── RENDER ─────────────────────────────────────────────────
+function renderAll() {
+  const data = load();
+  if (!data) return;
+
+  // header
+  const statusEl = document.getElementById('header-status');
+  statusEl.textContent = data.meta.currentStatus.toUpperCase();
+  statusEl.style.color = data.meta.currentStatus === 'loaded' ? 'var(--loaded)' : 'var(--empty)';
+
+  // dashboard
+  document.getElementById('dash-odo').textContent = data.meta.lastOdometer.toLocaleString();
+  const ds = document.getElementById('dash-status');
+  ds.textContent = data.meta.currentStatus.toUpperCase();
+  ds.className = 'card-value sm ' + data.meta.currentStatus;
+  document.getElementById('dash-trips').textContent = data.trips.length;
+
+  // last trip
+  const ltCard = document.getElementById('last-trip-card');
+  if (data.trips.length === 0) {
+    ltCard.innerHTML = '<div class="empty-state">No trips recorded yet</div>';
+  } else {
+    const t = data.trips[0];
+    ltCard.innerHTML = `
+      <div class="card-row">
+        <div>
+          <div class="card-label">${fmtDate(t.timestamp)}</div>
+          <div class="card-value sm">${t.distance.toLocaleString()} <span style="font-size:13px;color:var(--muted)">mi</span></div>
+          <div class="card-sub">${t.odometerStart.toLocaleString()} → ${t.odometerEnd.toLocaleString()}</div>
+        </div>
+        <div class="trip-status ${t.status}">${t.status}</div>
+      </div>`;
+  }
+
+  // mark trip prev odo
+  document.getElementById('mark-prev-odo').textContent = data.meta.lastOdometer.toLocaleString();
+
+  // history
+  renderHistory();
+
+  // stats
+  renderStats(data);
+}
+
+function renderHistory() {
+  const data = load();
+  if (!data) return;
+  const query = document.getElementById('search-input').value.toLowerCase();
+  const list = document.getElementById('trip-list');
+
+  const filtered = data.trips.filter(t => {
+    const dateStr = fmtDate(t.timestamp).toLowerCase();
+    return dateStr.includes(query) || t.status.includes(query);
+  });
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty-state">No trips found</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(t => `
+    <div class="trip-item">
+      <div class="trip-left">
+        <div class="trip-date">${fmtDate(t.timestamp)}</div>
+        <div class="trip-range">${t.odometerStart.toLocaleString()} → ${t.odometerEnd.toLocaleString()}</div>
+      </div>
+      <div class="trip-status ${t.status}">${t.status}</div>
+      <div class="trip-distance">${t.distance.toLocaleString()} <span>MI</span></div>
+    </div>
+  `).join('');
+}
+
+function renderStats(data) {
+  if (!data || data.trips.length === 0) return;
+  const total = data.trips.length;
+  const miles = data.trips.reduce((s, t) => s + t.distance, 0);
+  const avg = Math.round(miles / total);
+  const loaded = data.trips.filter(t => t.status === 'loaded').length;
+  const empty = data.trips.filter(t => t.status === 'empty').length;
+  const longest = Math.max(...data.trips.map(t => t.distance));
+
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-miles').textContent = miles.toLocaleString();
+  document.getElementById('stat-avg').textContent = avg.toLocaleString();
+  document.getElementById('stat-loaded').textContent = loaded;
+  document.getElementById('stat-empty').textContent = empty;
+  document.getElementById('stat-longest').textContent = longest.toLocaleString();
+}
+
+// ─── UTILS ──────────────────────────────────────────────────
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+function showView(view) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  document.getElementById('nav-' + view).classList.add('active');
+}
+
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  setTimeout(() => el.className = 'toast', 3000);
+}
+
+function exportData() {
+  const data = load();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'odo-export.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Exported', 'success');
+}
+
+function confirmReset() {
+  if (confirm('Delete all trips and reset odometer? This cannot be undone.')) {
+    localStorage.removeItem(STORE_KEY);
+    location.reload();
+  }
+}
+
+// ─── PWA ────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/ODO/sw.js');
+}
+
+boot();
+</script>
+</body>
+</html>
